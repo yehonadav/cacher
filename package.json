@@ -1,0 +1,43 @@
+{
+  "name": "@yehonadav/cacher",
+  "version": "1.0.7",
+  "description": "local cache service",
+  "author": "yehonadav",
+  "license": "Apache-2.0",
+  "repository": "yehonadav/cacher",
+  "main": "dist/index.js",
+  "engines": {
+    "node": ">=8",
+    "npm": ">=5"
+  },
+  "scripts": {
+    "build": "rollup -c",
+    "start": "rollup -c -w",
+    "build:version": "npm run build && npm version patch && npm publish --access=public && git push",
+    "update:version": "git add . && git commit -am \"update\" && git push && npm run build:version",
+    "i:update:version": "npm i && npm run update:version"
+  },
+  "dependencies": {},
+  "peerDependencies": {},
+  "devDependencies": {
+    "tslib": "^2.1.0",
+    "@types/node": "^12.0.0",
+    "babel-core": "^6.26.3",
+    "babel-runtime": "^6.26.0",
+    "rollup": "^1.32.1",
+    "rollup-plugin-typescript2": "^0.30.0",
+    "typescript": "^4.2.3",
+    "ts-node": "^9.1.1"
+  },
+  "files": [
+    "dist"
+  ],
+  "keywords": [
+    "common",
+    "frontend",
+    "components",
+    "react",
+    "typescript",
+    "npm"
+  ]
+}
