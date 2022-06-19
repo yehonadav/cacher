@@ -1,6 +1,7 @@
 import {CachedItem} from "./cachedItem";
 import {isValidCache} from "./isValidCache";
 
+// TODO: add sizeLimit
 export type CacherOptions = {
   /**
    max number of keys the cache holds
