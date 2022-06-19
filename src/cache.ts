@@ -2,13 +2,49 @@ import {CachedItem} from "./cachedItem";
 import {isValidCache} from "./isValidCache";
 
 export type CacherOptions = {
+  /**
+   max number of keys the cache holds
+   */
   maxLength: number;
+
+  /**
+   time after which the cache is considered outdated
+   */
   timeout: number;
+
+  /**
+   run a function on error
+   this is a good option for logging when 'returnCacheEvenWhenError' is true
+   */
+  onError: (params:{ section: string, key: string, error: Error }) => void;
+
+
+  /**
+   delete key and value after timeout is reached
+   */
+  deleteOnTimeout: boolean;
+
+  /**
+   if possible, return an old cache even
+   if an error occurred on the new cache
+   */
+  returnCacheEvenWhenError: boolean;
+
+  /**
+   avoid this when using aws lambda,
+   when true, old cache is preferred vs waiting for the new cache.
+   the old cache is returned and the new one is awaiting in the background.
+   */
+  returnOldCacheAndUpdate: boolean;
 }
 
-export const defaultCacherOptions = {
+export const defaultCacherOptions:CacherOptions = {
   maxLength: 1024,
   timeout: 3600,
+  onError: (params) => console.error(params),
+  deleteOnTimeout: false,
+  returnCacheEvenWhenError: false,
+  returnOldCacheAndUpdate: false,
 }
 
 export class Cacher {
@@ -16,10 +52,10 @@ export class Cacher {
   private _cacheList: CachedItem[];
   private options: CacherOptions;
 
-  constructor(options: CacherOptions = defaultCacherOptions) {
+  constructor(options: Partial<CacherOptions> = defaultCacherOptions) {
     this._cache = {};
     this._cacheList = [];
-    this.options = options;
+    this.options = {...defaultCacherOptions, ...options};
   }
 
   _add = (item:CachedItem) => {
@@ -51,16 +87,29 @@ export class Cacher {
 
     // update cache from database
     try {
-      const data = await call();
-      this._add({
-        LastModified: new Date(),
-        key,
-        data,
+      // TODO: handle case when cache is undefined and prevent multiple calls
+      const res = call().then(data => {
+        this._add({
+          LastModified: new Date(),
+          key,
+          data,
+        });
+
+        // TODO: implement
+        if (this.options.deleteOnTimeout){}
+
+        return data;
       });
-      return data as T
+
+      // WARNING: serverless functions will
+      // not update cache in the background
+      if (this.options.returnOldCacheAndUpdate && cached)
+        return cached?.data as T;
+
+      return await res as T;
     } catch (e) {
-      console.error({section: 'getCachedAsync', key, e});
-      if (cached)
+      this.options.onError({ section: 'getCachedAsync', key, error: e });
+      if (this.options.returnCacheEvenWhenError && cached)
         return cached.data;
       throw e;
     }
